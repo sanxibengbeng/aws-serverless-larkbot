@@ -7,17 +7,19 @@ import { DynamoDBClient,
     GetItemCommand, 
     PutItemCommand } from "@aws-sdk/client-dynamodb";
 
-const { debugLog } = require('../utils');
+const { debugLog, buildCard, getCurrentTime } = require('../utils');
 
 const snsclient = new SNSClient();
 const topicArn = process.env.SNS_TOPIC_ARN;
 const lark_token = process.env.LARK_TOKEN;
 // Generate UUID for message tracking
 function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
   });
+  debugLog('Generated UUID for message tracking', uuid, 'DEBUG');
+  return uuid;
 }
 
 const lark_encrypt_key = process.env.LARK_ENCRYPT_KEY
@@ -51,8 +53,9 @@ const larkclient = new lark.Client({
 });
 
 const replayLarkMessage = async(message_id, card, msg_type) => {
-    console.log("=====replayLarkMessage=====");
-    console.log(card);
+    debugLog("Replaying Lark message", { message_id, msg_type }, 'INFO');
+    debugLog("Card content", card, 'DEBUG');
+    
     return await larkclient.im.message.reply({
         path: {
             message_id: message_id,
@@ -65,7 +68,7 @@ const replayLarkMessage = async(message_id, card, msg_type) => {
         },
         },
     ).then(res => {
-        debugLog("Lark message reply response:", res);
+        debugLog("Lark message reply response", res, 'INFO');
         return res;
     });
 }
@@ -76,17 +79,17 @@ const _queryDynamoDb = async (table_name, key) => {
       TableName: table_name,
     };
     const command = new GetItemCommand(params);
-    debugLog("Querying DynamoDB with params:", params);
+    debugLog("Querying DynamoDB with params", params, 'DEBUG');
     try {
       const results = await dbclient.send(command);
-      debugLog("DynamoDB query results:", results);
+      debugLog("DynamoDB query results", results, 'DEBUG');
       if (results==null || !results.Item) {
-        debugLog("No item found in DynamoDB");
+        debugLog("No item found in DynamoDB", null, 'INFO');
         return null;
       } 
       return results;
     } catch (err) {
-      console.error("DynamoDB query error:", err);
+      debugLog("DynamoDB query error", err, 'ERROR');
       return null;
     }
   };
@@ -99,41 +102,41 @@ const _queryDynamoDb = async (table_name, key) => {
     const command = new PutItemCommand(params);
     try {
         const results = await dbclient.send(command);
-        debugLog("Items saved successfully to DynamoDB:", results);
+        debugLog("Items saved successfully to DynamoDB", results, 'INFO');
     } catch (err) {
-        console.error("Error saving to DynamoDB:", err);
+        debugLog("Error saving to DynamoDB", err, 'ERROR');
     }
   };
   
 // system table api
 const queryEventsDDB = async (key) => {
-    debugLog("Querying events from DynamoDB with key:", key);
+    debugLog("Querying events from DynamoDB with key", key, 'INFO');
     const queryKey = { event_id: { S: key } };
     const results = await _queryDynamoDb(dynamodb_tb_events, queryKey);
     if (results!=null &&  'header_data' in results.Item){
         const headerData = JSON.parse(results.Item.header.S);
-        debugLog("Retrieved header data:", headerData);
+        debugLog("Retrieved header data", headerData, 'DEBUG');
         return headerData;
     }
-    debugLog("No header data found for key:", key);
+    debugLog("No header data found for key", key, 'INFO');
     return null;
 };
 
 const saveEventsDDB = async (event_id, header) =>{
-    debugLog("Saving event to DynamoDB:", { event_id, header });
+    debugLog("Saving event to DynamoDB", { event_id }, 'INFO');
     const oneDayLater = Math.floor(Date.now()/1000) + (24 * 60 * 60 );
     const item = {
         event_id: { S: event_id }, 
         header_data: {S: JSON.stringify(header)},
         expire_at:{N: oneDayLater.toString()}
     };
-    debugLog("DynamoDB item to save:", item);
+    debugLog("DynamoDB item to save", item, 'DEBUG');
     _saveDynamoDb(dynamodb_tb_events, item);
 }
 
 // 解密飞书消息
 function decryptData(encrypt, key) {
-    debugLog("Decrypting Lark message");
+    debugLog("Decrypting Lark message", null, 'INFO');
     try {
         const crypto = require('crypto');
         const keyBuffer = Buffer.from(key, 'utf8');
@@ -148,20 +151,20 @@ function decryptData(encrypt, key) {
         decrypted = Buffer.concat([decrypted, decipher.final()]);
         
         const decryptedData = JSON.parse(decrypted.toString('utf8'));
-        debugLog("Successfully decrypted data");
+        debugLog("Successfully decrypted data", null, 'INFO');
         return decryptedData;
     } catch (err) {
-        console.error('Decrypt error:', err);
+        debugLog('Decrypt error', err, 'ERROR');
         return null;
     }
 }
 
 export const handler = async(event) => {
-    debugLog("Received event:", event);
+    debugLog("Received event", { headers: event.headers }, 'INFO');
     
     // 确保event.body存在
     if (!event.body) {
-        debugLog("No event body found");
+        debugLog("No event body found", null, 'ERROR');
         return {
             statusCode: 400,
             body: JSON.stringify({ message: "No event body found" })
@@ -169,18 +172,18 @@ export const handler = async(event) => {
     }
     
     let rawData = JSON.parse(event.body);
-    debugLog("Raw data:", rawData);
+    debugLog("Raw data received", rawData, 'DEBUG');
     
     // 处理加密数据
     let data = rawData;
     if (rawData.encrypt && lark_encrypt_key) {
-        debugLog("Encrypted data detected, attempting to decrypt");
+        debugLog("Encrypted data detected, attempting to decrypt", null, 'INFO');
         const decryptedData = decryptData(rawData.encrypt, lark_encrypt_key);
         if (decryptedData) {
-            debugLog("Decrypted data:", decryptedData);
+            debugLog("Decrypted data successfully", { type: decryptedData.type }, 'INFO');
             data = decryptedData;
         } else {
-            console.error("Failed to decrypt data");
+            debugLog("Failed to decrypt data", null, 'ERROR');
         }
     }
     
@@ -190,7 +193,7 @@ export const handler = async(event) => {
         (data.schema && data.header && data.header.event_type === 'url_verification')) {
         
         const challenge = data.challenge || (data.event && data.event.challenge);
-        debugLog("URL verification detected, challenge:", challenge);
+        debugLog("URL verification detected, challenge", challenge, 'INFO');
         
         return {
             statusCode: 200,
@@ -200,7 +203,11 @@ export const handler = async(event) => {
         };
     } else if (data.header && data.header.token === lark_token){
         if (data.header.event_type === 'im.message.receive_v1') {
-            debugLog("Received message event:", data);
+            debugLog("Received message event", { 
+                event_id: data.header.event_id,
+                event_type: data.header.event_type
+            }, 'INFO');
+            
             const message = data.event.message;
             const message_id = message.message_id;
             const msg_type = message.message_type;
@@ -208,11 +215,10 @@ export const handler = async(event) => {
             const event_id = data.header.event_id;
 
             try{
-                debugLog("Checking for duplicate event:", event_id);
+                debugLog("Checking for duplicate event", event_id, 'INFO');
                 let event = await queryEventsDDB(event_id);
                 if (!isEmpty(event)){
-                    console.error("!!!DUPLICATE EVENT!!!");
-                    debugLog("Duplicate event detected, ignoring");
+                    debugLog("Duplicate event detected, ignoring", { event_id }, 'WARN');
                     return { statusCode: 200, }
                 }
 
@@ -220,40 +226,51 @@ export const handler = async(event) => {
                 let msg
                 if (msg_type == 'text'){
                     msg = JSON.parse(message.content).text;
-                    debugLog("Received text message:", msg);
+                    debugLog("Received text message", { msg, message_id }, 'INFO');
                 }else if (msg_type == 'image'){
                     msg = JSON.parse(message.content).image_key;
+                    debugLog("Received image message", { image_key: msg, message_id }, 'INFO');
                 }else {
-
+                    debugLog("Received unsupported message type", { msg_type, message_id }, 'WARN');
                 }
                
-
                 try{
                     // 构造首次响应卡片
-                    console.log("========5. buildCard=========");
+                    debugLog("Building initial response card", null, 'INFO');
                     let card_content;
                     let msg_body;
-                    card_content = utils.buildCard("Pending", utils.getCurrentTime(), "...", "", false, true);
-                    console.log("========6. replayLarkMessage=========");
+                    card_content = buildCard("Pending", getCurrentTime(), "...", "", false, true);
+                    debugLog("Sending initial response to Lark", { message_id }, 'INFO');
                     msg_body = await replayLarkMessage(message_id, card_content, "interactive");
 
-                     // const msg = JSON.parse(message.content).text;
+                    // 发布到SNS主题
+                    const snsPayload = {
+                        msg_type: msg_type,
+                        msg: msg,
+                        open_chat_id: open_chat_id,
+                        message_id: message_id,
+                        msg_body: msg_body,
+                    };
+                    
+                    debugLog("Publishing message to SNS", { 
+                        topicArn,
+                        msg_type,
+                        message_id
+                    }, 'INFO');
+                    
                     const command = new PublishCommand({
-                        TopicArn:topicArn,
-                        Message:JSON.stringify({
-                            msg_type: msg_type,
-                            msg: msg,
-                            open_chat_id: open_chat_id,
-                            message_id: message_id,
-                            msg_body: msg_body,
-                        })
+                        TopicArn: topicArn,
+                        Message: JSON.stringify(snsPayload)
                     });
 
-                    await snsclient.send(command);
+                    const snsResult = await snsclient.send(command);
+                    debugLog("SNS publish result", { 
+                        MessageId: snsResult.MessageId,
+                        SequenceNumber: snsResult.SequenceNumber
+                    }, 'INFO');
 
                 }catch(err){
-                    console.error("!!!ERR2!!!");
-                    console.log(JSON.stringify(err));
+                    debugLog("Error processing message", err, 'ERROR');
                     await larkclient.im.message.create({
                         params: {
                             receive_id_type: 'chat_id',
@@ -268,14 +285,13 @@ export const handler = async(event) => {
 
                 return { statusCode: 200, }
             }catch(err){
-                console.error("!!!ERR1!!!");
-                console.log(JSON.stringify(err));
+                debugLog("Error in handler", err, 'ERROR');
             } finally {
-                
+                debugLog("Handler execution completed", { event_id }, 'INFO');
             }
         }
     }else{
-        console.log("Invalid token or unrecognized request type:", JSON.stringify(data));
+        debugLog("Invalid token or unrecognized request type", data, 'WARN');
         return {
             statusCode: 400,
             body: JSON.stringify({ message: "Invalid request" })

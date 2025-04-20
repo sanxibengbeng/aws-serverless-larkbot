@@ -1,5 +1,4 @@
 DB_TABLE=lark_messages
-DEBUG_MODE=true
 START_CMD=/rs
 
 LARK_APPID=cli_**
@@ -17,3 +16,6 @@ AWS_CLAUDE_IMG_DESC_PROMPT=描述下图片内容
 
 AWS_CLAUDE_MAX_CHAT_QUOTA_PER_USER=1000
 
+
+# Debug mode (1=enabled, 0=disabled)
+DEBUG_MODE=1

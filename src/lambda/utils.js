@@ -7,19 +7,19 @@ import {
 } from "@aws-sdk/client-bedrock-runtime";
 
 // Debug logging function with timestamp and optional log level
-// Only logs if DEBUG_MODE environment variable is set to 'true'
+// Only logs if DEBUG_MODE environment variable is set to '1'
 export const debugLog = (message, data = null, level = 'INFO') => {
-  // Check if DEBUG_MODE is enabled
-  const debugMode = process.env.DEBUG_MODE === 'true';
-  
+  // Check if DEBUG_MODE is enabled (value is '1')
+  const debugMode = process.env.DEBUG_MODE == 1;
+
   // If debug mode is not enabled, return early without logging
   if (!debugMode) {
     return;
   }
-  
+
   const timestamp = new Date().toISOString();
   const prefix = `[${timestamp}] [${level}]`;
-  
+
   if (data) {
     if (typeof data === 'object') {
       console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
@@ -63,7 +63,7 @@ export function generateUUID() {
   return uuid;
 }
 
-export const getCurrentTime = function() {
+export const getCurrentTime = function () {
   const now = new Date();
   const time = now.toISOString().replace('T', ' ').slice(0, 19);
   debugLog('Current time', time, 'DEBUG');
@@ -72,7 +72,7 @@ export const getCurrentTime = function() {
 
 export const buildCard = function (header, time, content, endmsg, end, robot) {
   debugLog('Building card', { header, time, contentLength: content?.length, endmsg, end, robot }, 'DEBUG');
-  
+
   let endMsg = "正在思考，请稍等..."
   if (end) {
     if (endmsg) {
@@ -98,18 +98,18 @@ export const buildCard = function (header, time, content, endmsg, end, robot) {
       }
     ]
   };
-  
+
   debugLog('Card built successfully', { endMsg }, 'DEBUG');
   return JSON.stringify(card);
 }
 
 export const invokeClaude3Stream = async (messages, system_prompt, callback) => {
-  debugLog('Invoking Claude3 Stream', { 
-    messagesCount: messages.length, 
-    systemPromptLength: system_prompt.length 
+  debugLog('Invoking Claude3 Stream', {
+    messagesCount: messages.length,
+    systemPromptLength: system_prompt.length
   }, 'INFO');
-  
-  const client = new BedrockRuntimeClient({ 
+
+  const client = new BedrockRuntimeClient({
     region: aws_region_code,
     credentials: {
       accessKeyId: aws_ak,
@@ -126,7 +126,7 @@ export const invokeClaude3Stream = async (messages, system_prompt, callback) => 
     max_tokens: 2048,
   };
 
-  debugLog('Claude3 Stream payload prepared', { 
+  debugLog('Claude3 Stream payload prepared', {
     anthropic_version: payload.anthropic_version,
     temperature: payload.temperature,
     top_p: payload.top_p,
@@ -167,14 +167,13 @@ export const invokeClaude3Stream = async (messages, system_prompt, callback) => 
 
         // ... and add it to the complete message
         completeMessage = completeMessage + chunk.delta.text;
-        
-        if (idx%getRandomInt(10,20) == 0)
-        {
-          debugLog('Sending partial response to callback', { 
+
+        if (idx % getRandomInt(10, 20) == 0) {
+          debugLog('Sending partial response to callback', {
             messageLength: completeMessage.length,
             chunkIndex: idx
           }, 'DEBUG');
-          await callback(completeMessage,  "", false)
+          await callback(completeMessage, "", false)
         }
         idx++;
       } else if (chunk_type === "message_stop") {
@@ -189,20 +188,20 @@ export const invokeClaude3Stream = async (messages, system_prompt, callback) => 
           invocationLatency: metrics.invocationLatency,
           firstByteLatency: metrics.firstByteLatency
         }, 'INFO');
-        
+
         let endmsg = "input:" + inputTokenCount + " output:" + outputTokenCount + " ";
         await callback(completeMessage, endmsg, true)
       }
     }
     // Print the complete message.
-    debugLog('Complete response received', { 
+    debugLog('Complete response received', {
       responseLength: completeMessage.length,
       inputTokens: inputTokenCount,
       outputTokens: outputTokenCount
     }, 'INFO');
 
     const response = {
-      content: [{type: 'text', text: completeMessage}],
+      content: [{ type: 'text', text: completeMessage }],
       usage: { input_tokens: inputTokenCount, output_tokens: outputTokenCount },
     }
 
@@ -220,16 +219,16 @@ export const invokeClaude3Stream = async (messages, system_prompt, callback) => 
     }
   } finally {
     debugLog('Claude3 Stream invocation completed', null, 'DEBUG');
-  } 
+  }
 }
 
 export const invokeClaude3 = async (messages, system_prompt) => {
-  debugLog('Invoking Claude3', { 
-    messagesCount: messages.length, 
-    systemPromptLength: system_prompt.length 
+  debugLog('Invoking Claude3', {
+    messagesCount: messages.length,
+    systemPromptLength: system_prompt.length
   }, 'INFO');
-  
-  const client = new BedrockRuntimeClient({ 
+
+  const client = new BedrockRuntimeClient({
     region: aws_region_code,
     credentials: {
       accessKeyId: aws_ak,
@@ -246,7 +245,7 @@ export const invokeClaude3 = async (messages, system_prompt) => {
     max_tokens: 2048,
   };
 
-  debugLog('Claude3 payload prepared', { 
+  debugLog('Claude3 payload prepared', {
     anthropic_version: payload.anthropic_version,
     temperature: payload.temperature,
     top_p: payload.top_p,
@@ -265,12 +264,12 @@ export const invokeClaude3 = async (messages, system_prompt) => {
     const response = await client.send(command);
     const decodedResponseBody = new TextDecoder().decode(response.body);
     const responseBody = JSON.parse(decodedResponseBody);
-    
-    debugLog('Response received from Claude3', { 
+
+    debugLog('Response received from Claude3', {
       contentLength: responseBody.content?.length,
       type: responseBody.type
     }, 'INFO');
-    
+
     return responseBody;
   } catch (err) {
     if (err instanceof AccessDeniedException) {
@@ -289,14 +288,14 @@ export const invokeClaude3 = async (messages, system_prompt) => {
 
 
 export const buildCardTest = (header, time, content, end, robot) => {
-  debugLog('Building test card', { 
-    header, 
-    time, 
-    contentLength: content?.length, 
-    end, 
-    robot 
+  debugLog('Building test card', {
+    header,
+    time,
+    contentLength: content?.length,
+    end,
+    robot
   }, 'DEBUG');
-  
+
   if (content) {
     content = content.replace(/^(.*)/gm, '**\$1**');
     debugLog('Content formatted for card', { contentLength: content.length }, 'DEBUG');
