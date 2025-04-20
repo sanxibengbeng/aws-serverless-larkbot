@@ -1,4 +1,5 @@
 DB_TABLE=lark_messages
+DEBUG_MODE=true
 START_CMD=/rs
 
 LARK_APPID=cli_**

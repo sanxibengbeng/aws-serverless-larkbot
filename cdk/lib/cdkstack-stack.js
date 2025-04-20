@@ -103,6 +103,7 @@ export class CdkstackStack extends Stack {
         AWS_CLAUDE_MAX_CHAT_QUOTA_PER_USER:process.env.AWS_CLAUDE_MAX_CHAT_QUOTA_PER_USER,
         START_CMD:process.env.START_CMD,
         SNS_TOPIC_ARN:snsTopic.topicArn,
+        DEBUG_MODE:process.env.DEBUG_MODE || '0',
       },
       runtime: Runtime.NODEJS_18_X,
     }
