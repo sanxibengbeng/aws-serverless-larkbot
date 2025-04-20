@@ -124,13 +124,17 @@ const saveDynamoDb = async (chat_id, messages, system_prompt) => {
 
 // Stats table API for token usage tracking
 const queryStatsDDB = async (key) => {
+  const tokenstat = {
+    input_tokens:0,
+    output_tokens:0
+  }
   const queryKey = { app_id: { S: key } };
   const results = await _queryDynamoDb(dynamodb_tb_stats, queryKey);
   if (results != null && 'tokens' in results.Item) {
     return JSON.parse(results.Item.tokens.S);
   }
   debugLog("No token stats found for app", { appId: key }, 'INFO');
-  return null;
+  return tokenstat;
 };
 
 const saveStatsDDB = async (key, input_tokens, output_tokens) => {

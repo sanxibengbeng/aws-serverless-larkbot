@@ -20,14 +20,47 @@ export const debugLog = (message, data = null, level = 'INFO') => {
   const timestamp = new Date().toISOString();
   const prefix = `[${timestamp}] [${level}]`;
 
-  if (data) {
-    if (typeof data === 'object') {
-      console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+  // For ERROR level, capture and include stack trace
+  if (level === 'ERROR') {
+    // Create an Error object to capture the current stack trace
+    const stackTrace = new Error().stack
+      .split('\n')
+      .slice(2) // Skip the Error constructor and this function call
+      .join('\n');
+    
+    if (data) {
+      if (typeof data === 'object') {
+        // If data is an error object, include its message and stack if available
+        if (data instanceof Error) {
+          console.log(`${prefix} ${message}`, JSON.stringify({
+            errorMessage: data.message,
+            errorName: data.name,
+            errorStack: data.stack || 'No stack trace available',
+            callStack: stackTrace
+          }, null, 2));
+        } else {
+          console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+          console.log(`${prefix} STACK TRACE:\n${stackTrace}`);
+        }
+      } else {
+        console.log(`${prefix} ${message}`, data);
+        console.log(`${prefix} STACK TRACE:\n${stackTrace}`);
+      }
     } else {
-      console.log(`${prefix} ${message}`, data);
+      console.log(`${prefix} ${message}`);
+      console.log(`${prefix} STACK TRACE:\n${stackTrace}`);
     }
   } else {
-    console.log(`${prefix} ${message}`);
+    // For non-ERROR levels, use the original logging logic
+    if (data) {
+      if (typeof data === 'object') {
+        console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+      } else {
+        console.log(`${prefix} ${message}`, data);
+      }
+    } else {
+      console.log(`${prefix} ${message}`);
+    }
   }
 };
 
