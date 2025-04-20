@@ -1,0 +1,61 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# AWS CDK specific
+.cdk.staging/
+cdk.out/
+cdk.context.json
+
+# Environment variables and secrets
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.pem
+*.key
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+*.sublime-*
+
+# Build and distribution
+dist/
+build/
+coverage/
+.coverage
+.nyc_output/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Lambda deployment packages
+*.zip
+
+# Testing
+.jest-cache/
+
+# Miscellaneous
+.serverless/
+.webpack/
+.dynamodb/
+.eslintcache
