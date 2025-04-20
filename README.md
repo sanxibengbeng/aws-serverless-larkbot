@@ -12,8 +12,23 @@ Streaming the output
 
 ![lark-claude3](../assets/lark-claude3-archi.png)
 
+## Project Structure
+```
+aws-serverless-larkbot/
+├── cdk/                  # CDK deployment stack code
+│   ├── bin/              # CDK app entry point
+│   ├── lib/              # CDK stack definition
+│   └── ...               # Other CDK related files
+├── src/                  # Business logic code
+│   ├── lambda/           # Lambda function handlers
+│   │   ├── handler_larkcallback/
+│   │   └── handler_larkchat/
+│   └── ...               # Other source files
+└── ...                   # Other project files
+```
+
 ## Steps   
-1. create a `.env` file in folder `cdkstack/`,  add the your actual variables. 
+1. create a `.env` file in folder `cdk/`,  add the your actual variables. 
 ```  
 # 项目相关设置
 DB_TABLE=lark_messages
@@ -41,7 +56,7 @@ AWS_CLAUDE_MAX_CHAT_QUOTA_PER_USER=1000
 2. Install the AWS CDK  
 `npm install -g aws-cdk`  
 
-3. In folder `cdkstack/`  
+3. In folder `cdk/`  
 run `cdk bootstrap`  
 run `cdk synth`   
 run `cdk deploy`  

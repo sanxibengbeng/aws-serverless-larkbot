@@ -1,0 +1,14 @@
+{
+  "name": "larkbot-src",
+  "version": "0.1.0",
+  "description": "Business logic for Lark Bot with Bedrock Claude3",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.588.0",
+    "@larksuiteoapi/node-sdk": "latest",
+    "openai": "latest"
+  }
+}
