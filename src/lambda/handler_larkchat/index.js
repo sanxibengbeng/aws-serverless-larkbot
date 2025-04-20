@@ -11,7 +11,7 @@ import {
 
 import fs from 'fs';
 
-const { debugLog } = require('../utils');
+const { debugLog, buildCard, getCurrentTime, invokeClaude3Stream, invokeClaude3 } = require('../utils');
 
 const dynamodb_tb = process.env.DB_TABLE;
 const dynamodb_tb_stats = 'lark_stats';
@@ -326,14 +326,14 @@ export const handler = async (event) => {
     let msg_body = body.msg_body;
     // Initial card can be enabled for immediate feedback
     // debugLog("Sending initial 'thinking' response card");
-    // card_content = utils.buildCard("Pending", utils.getCurrentTime(), "...", "", false, true);
+    // card_content = buildCard("Pending", getCurrentTime(), "...", "", false, true);
     // msg_body = await replayLarkMessage(message_id, card_content, "interactive");
     
     if (msg_body.msg == 'success') {
       debugLog("Starting Claude3 streaming invocation");
-      response = await utils.invokeClaude3Stream(messages, sp, async function (msg, endmsg, end) {
+      response = await invokeClaude3Stream(messages, sp, async function (msg, endmsg, end) {
         debugLog("Streaming update received", { messageLength: msg.length, isEnd: end });
-        card_content = utils.buildCard("Result", utils.getCurrentTime(), msg, endmsg, end, true);
+        card_content = buildCard("Result", getCurrentTime(), msg, endmsg, end, true);
         await streamLarkMessage(msg_body.data.message_id, card_content);
       });
 
@@ -364,17 +364,16 @@ export const handler = async (event) => {
     };
 
   } catch (error) {
-    console.error("Error in handler:", error);
-    debugLog("Error details:", { 
+    debugLog("Error in handler:", { 
       message: error.message, 
       stack: error.stack,
       name: error.name
-    });
+    }, 'ERROR');
     
     try {
       await sendLarkMessage(open_chat_id, "An error occurred while processing your request. Please try again later.");
     } catch (sendError) {
-      console.error("Failed to send error message to Lark:", sendError);
+      debugLog("Failed to send error message to Lark:", sendError, 'ERROR');
     }
     
     return {
