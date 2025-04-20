@@ -27,8 +27,6 @@ export class CdkstackStack extends Stack {
   constructor(scope, id, props) {
     super(scope, id, props);
 
-    if (!process.env.DB_TABLE) throw Error('empty environment variables');
-
     // Get deployment name from props
     const deploymentName = props.deploymentName || 'default';
     
@@ -36,12 +34,16 @@ export class CdkstackStack extends Stack {
     const tableNamePrefix = `${deploymentName}-`;
 
     // Create DynamoDB tables with unique names
+    const messagesTableName = `${tableNamePrefix}lark_messages`;
+    const statsTableName = `${tableNamePrefix}lark_stats`;
+    const eventsTableName = `${tableNamePrefix}lark_events`;
+    
     const dynamoTable = new Table(this, 'items', {
       partitionKey: {
         name: 'chat_id',
         type: AttributeType.STRING
       },
-      tableName: `${tableNamePrefix}${process.env.DB_TABLE}`,
+      tableName: messagesTableName,
       timeToLiveAttribute: 'expire_at',
       /**
        *  The default removal policy is RETAIN, which means that cdk destroy will not attempt to delete
@@ -56,7 +58,7 @@ export class CdkstackStack extends Stack {
         name: 'app_id',
         type: AttributeType.STRING
       },
-      tableName: `${tableNamePrefix}lark_stats`,
+      tableName: statsTableName,
       /**
        *  The default removal policy is RETAIN, which means that cdk destroy will not attempt to delete
        * the new table, and it will remain in your account until manually deleted. By setting the policy to
@@ -70,7 +72,7 @@ export class CdkstackStack extends Stack {
         name: 'event_id',
         type: AttributeType.STRING
       },
-      tableName: `${tableNamePrefix}lark_events`,
+      tableName: eventsTableName,
       timeToLiveAttribute: 'expire_at',
       /**
        *  The default removal policy is RETAIN, which means that cdk destroy will not attempt to delete
@@ -93,7 +95,9 @@ export class CdkstackStack extends Stack {
         ],
       },
       environment: {
-        DB_TABLE: `${tableNamePrefix}${process.env.DB_TABLE}`,
+        DB_TABLE: messagesTableName,
+        DB_STATS_TABLE: statsTableName,
+        DB_EVENTS_TABLE: eventsTableName,
         LARK_APPID: process.env.LARK_APPID,
         LARK_APP_SECRET: process.env.LARK_APP_SECRET,
         LARK_TOKEN: process.env.LARK_TOKEN,
@@ -124,6 +128,7 @@ export class CdkstackStack extends Stack {
         forceDockerBundling: false,
       },
       functionName: `${deploymentName}-lark-callback`,
+      timeout: Duration.minutes(1),
       ...NodejsFunctionProps,
     })
 

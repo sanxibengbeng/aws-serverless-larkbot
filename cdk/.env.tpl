@@ -1,4 +1,3 @@
-DB_TABLE=lark_messages
 START_CMD=/rs
 
 LARK_APPID=cli_**

@@ -1,80 +1,42 @@
-# LarkBot-Bedrock Claude3
-Build a bot in Lark (飞书) using Bedrock Claude3 model. The backend is hosted on AWS's serverless
-For steps in Lark side, please refer to [develop-a-bot-in-5-minute](https://open.feishu.cn/document/home/develop-a-bot-in-5-minutes/create-an-app)
+# DynamoDB Tables Structure
 
-## Feature
+The application uses three DynamoDB tables:
 
-Streaming the output
+1. **Messages Table (`lark_messages`)**: 
+   - Primary key: `chat_id` (String)
+   - TTL attribute: `expire_at`
+   - Purpose: Stores conversation history and system prompts for each chat
+   - Key fields:
+     - `chat_id`: Unique identifier for the chat
+     - `messages`: JSON string containing conversation history
+     - `system_prompt`: JSON string containing the system prompt
+     - `expire_at`: TTL timestamp (24 hours from creation)
 
-![lark-claude3](./streamming.gif)
+2. **Stats Table (`lark_stats`)**: 
+   - Primary key: `app_id` (String)
+   - Purpose: Tracks token usage statistics for the application
+   - Key fields:
+     - `app_id`: Lark application ID
+     - `tokens`: JSON string containing input and output token counts
 
-## Architecture
+3. **Events Table (`lark_events`)**: 
+   - Primary key: `event_id` (String)
+   - TTL attribute: `expire_at`
+   - Purpose: Tracks processed events to prevent duplicate processing
+   - Key fields:
+     - `event_id`: Unique event identifier from Lark
+     - `header_data`: JSON string containing event header information
+     - `expire_at`: TTL timestamp (24 hours from creation)
 
-![lark-claude3](../assets/lark-claude3-archi.png)
+## Table Relationships
 
-## Project Structure
-```
-aws-serverless-larkbot/
-├── cdk/                  # CDK deployment stack code
-│   ├── bin/              # CDK app entry point
-│   ├── lib/              # CDK stack definition
-│   └── ...               # Other CDK related files
-├── src/                  # Business logic code
-│   ├── lambda/           # Lambda function handlers
-│   │   ├── handler_larkcallback/
-│   │   └── handler_larkchat/
-│   └── ...               # Other source files
-└── ...                   # Other project files
-```
+- The **Messages Table** stores conversation data keyed by `chat_id`
+- The **Stats Table** tracks token usage statistics keyed by `app_id`
+- The **Events Table** prevents duplicate event processing by tracking `event_id`
 
-## Steps   
-1. create a `.env` file in folder `cdk/`,  add the your actual variables. 
-```  
-# 项目相关设置
-DB_TABLE=lark_messages
-START_CMD=/rs
+## Environment Variables
 
-# 飞书相关设置
-LARK_APPID={LARK_APPID}
-LARK_APP_SECRET={LARK_APP_SECRET}
-LARK_TOKEN={LARK_TOKEN}
-LARK_ENCRYPT_KEY={LARK_ENCRYPT_KEY}
-
-# AWS 相关设置
-AWS_AK={AWS_AK}
-AWS_SK={AWS_SK}
-AWS_REGION_CODE={AWS_REGION_CODE}
-AWS_BEDROCK_CLAUDE_SONNET=anthropic.claude-3-sonnet-20240229-v1:0
-AWS_CLAUDE_MAX_SEQ=10
-## claude 系统提示词
-AWS_CLAUDE_SYSTEM_PROMPT=所有的回答用中文
-## 多模态图片提示词
-AWS_CLAUDE_IMG_DESC_PROMPT=描述下图片内容
-## 每个用户最大对话数量
-AWS_CLAUDE_MAX_CHAT_QUOTA_PER_USER=1000
-```   
-2. Install the AWS CDK  
-`npm install -g aws-cdk`  
-
-3. In folder `cdk/`  
-run `cdk bootstrap`  
-run `cdk synth`   
-run `cdk deploy`  
-
-4. Once deply success, you can get the api endpoint from the output.  
-For example,
-![image](https://user-images.githubusercontent.com/19160090/222913280-22e826f4-7f07-48ca-ba1d-2deed83d53c6.png)
-Use this URL as the callback url for lark message event.  
-
-1. After all dones. congrats  
-![lark-claude3](../assets/lark-claude3-screenshot.png)
-
-##  Features:
-
-* cdk部署整套架构
-* 飞书+claude3支持文字和图片交流
-* 内置命令 /rs 清空历史对话
-* 内置命令 /tc token统计
-* 内置命令 /sp 系统提示词
-* 控制了单个chat_id最大对话数，防止api abuse
-* 历史对话有效期默认24小时
+The table names are configured through environment variables:
+- `DB_TABLE`: Messages table name
+- `DB_STATS_TABLE`: Stats table name
+- `DB_EVENTS_TABLE`: Events table name

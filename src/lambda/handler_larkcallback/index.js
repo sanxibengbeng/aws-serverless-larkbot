@@ -24,7 +24,8 @@ function generateUUID() {
 
 const lark_encrypt_key = process.env.LARK_ENCRYPT_KEY
 
-const dynamodb_tb_events = 'lark_events';
+// DynamoDB table for event tracking
+const dynamodb_tb_events = process.env.DB_EVENTS_TABLE;
 const dbclient = new DynamoDBClient();
 
 function isEmpty(value) {
@@ -108,13 +109,13 @@ const _queryDynamoDb = async (table_name, key) => {
     }
   };
   
-// system table api
+// Events table API for tracking processed events
 const queryEventsDDB = async (key) => {
     debugLog("Querying events from DynamoDB with key", key, 'INFO');
     const queryKey = { event_id: { S: key } };
     const results = await _queryDynamoDb(dynamodb_tb_events, queryKey);
-    if (results!=null &&  'header_data' in results.Item){
-        const headerData = JSON.parse(results.Item.header.S);
+    if (results!=null && 'header_data' in results.Item){
+        const headerData = JSON.parse(results.Item.header_data.S);
         debugLog("Retrieved header data", headerData, 'DEBUG');
         return headerData;
     }

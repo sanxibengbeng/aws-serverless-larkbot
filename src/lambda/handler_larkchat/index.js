@@ -13,8 +13,9 @@ import fs from 'fs';
 
 const { debugLog, buildCard, getCurrentTime, invokeClaude3Stream, invokeClaude3 } = require('../utils');
 
-const dynamodb_tb = process.env.DB_TABLE;
-const dynamodb_tb_stats = 'lark_stats';
+// DynamoDB table names from environment variables
+const dynamodb_tb_messages = process.env.DB_TABLE;
+const dynamodb_tb_stats = process.env.DB_STATS_TABLE;
 const dbclient = new DynamoDBClient();
 
 const start_command = process.env.START_CMD;
@@ -68,16 +69,17 @@ const _queryDynamoDb = async (table_name, key) => {
     TableName: table_name,
   };
   const command = new GetItemCommand(params);
+  debugLog("Querying DynamoDB with params", { tableName: table_name, key }, 'DEBUG');
   try {
     const results = await dbclient.send(command);
-    console.log("============_queryDynamoDb============")
-    console.log(results)
     if (results == null || !results.Item) {
+      debugLog("No item found in DynamoDB", { tableName: table_name }, 'INFO');
       return null;
     }
+    debugLog("DynamoDB query successful", { tableName: table_name }, 'DEBUG');
     return results;
   } catch (err) {
-    console.error(err);
+    debugLog("DynamoDB query error", { tableName: table_name, error: err }, 'ERROR');
     return null;
   }
 };
@@ -88,26 +90,27 @@ const _saveDynamoDb = async (table_name, item) => {
     Item: item
   }
   const command = new PutItemCommand(params);
+  debugLog("Saving to DynamoDB", { tableName: table_name }, 'DEBUG');
   try {
     const results = await dbclient.send(command);
-    console.log("Items saved success", results);
+    debugLog("Items saved successfully to DynamoDB", { tableName: table_name }, 'INFO');
   } catch (err) {
-    console.error(err);
+    debugLog("Error saving to DynamoDB", { tableName: table_name, error: err }, 'ERROR');
   }
 };
 
 // message table api
 const queryDynamoDb = async (key, target) => {
   const queryKey = { chat_id: { S: key } };
-  const results = await _queryDynamoDb(dynamodb_tb, queryKey);
+  const results = await _queryDynamoDb(dynamodb_tb_messages, queryKey);
   if (results != null && target in results.Item) {
     return JSON.parse(results.Item[target].S);
   }
   return null;
-  // return _queryDynamoDb(dynamodb_tb, queryKey);
 };
+
 const saveDynamoDb = async (chat_id, messages, system_prompt) => {
-  console.log("========saveDynamoDb==========")
+  debugLog("Saving conversation data to DynamoDB", { chat_id }, 'INFO');
   const oneDayLater = Math.floor(Date.now() / 1000) + (24 * 60 * 60);
   const item = {
     chat_id: { S: chat_id },
@@ -115,27 +118,28 @@ const saveDynamoDb = async (chat_id, messages, system_prompt) => {
     system_prompt: { S: JSON.stringify(system_prompt) },
     expire_at: { N: oneDayLater.toString() }
   }
-  console.log(item)
-  _saveDynamoDb(dynamodb_tb, item);
+  debugLog("DynamoDB item to save", { chat_id, messagesCount: messages?.length }, 'DEBUG');
+  _saveDynamoDb(dynamodb_tb_messages, item);
 }
 
-// system table api
+// Stats table API for token usage tracking
 const queryStatsDDB = async (key) => {
   const queryKey = { app_id: { S: key } };
   const results = await _queryDynamoDb(dynamodb_tb_stats, queryKey);
   if (results != null && 'tokens' in results.Item) {
     return JSON.parse(results.Item.tokens.S);
   }
+  debugLog("No token stats found for app", { appId: key }, 'INFO');
   return null;
 };
+
 const saveStatsDDB = async (key, input_tokens, output_tokens) => {
-  console.log("=====saveStatsDDB=====")
+  debugLog("Saving token stats to DynamoDB", { appId: key, input_tokens, output_tokens }, 'INFO');
   const token_counter = { input_tokens: input_tokens, output_tokens: output_tokens };
   const item = {
     app_id: { S: key },
     tokens: { S: JSON.stringify(token_counter) }
   };
-  console.log(item)
   _saveDynamoDb(dynamodb_tb_stats, item);
 }
 
