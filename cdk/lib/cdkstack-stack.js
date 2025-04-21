@@ -114,6 +114,12 @@ export class CdkstackStack extends Stack {
         START_CMD: process.env.START_CMD,
         SNS_TOPIC_ARN: snsTopic.topicArn,
         DEBUG_MODE: process.env.DEBUG_MODE || '0',
+        AI_MODEL_TYPE: process.env.AI_MODEL_TYPE || 'claude3',
+        AI_MODEL_TEMPERATURE: process.env.AI_MODEL_TEMPERATURE || '0.7',
+        AI_MODEL_TOP_P: process.env.AI_MODEL_TOP_P || '0.9',
+        AI_MODEL_MAX_TOKENS: process.env.AI_MODEL_MAX_TOKENS || '2048',
+        MOCK_MODEL_DELAY: process.env.MOCK_MODEL_DELAY || '300',
+        MOCK_MODEL_DEFAULT_RESPONSE: process.env.MOCK_MODEL_DEFAULT_RESPONSE || '',
       },
       runtime: Runtime.NODEJS_18_X,
     }
@@ -126,6 +132,9 @@ export class CdkstackStack extends Stack {
         nodeModules: ['openai', '@larksuiteoapi/node-sdk'],
         externalModules: ['@aws-sdk'],
         forceDockerBundling: false,
+        esbuildArgs: {
+          '--packages': 'bundle'  // Fix for esbuild 0.22.0+ compatibility
+        }
       },
       functionName: `${deploymentName}-lark-callback`,
       timeout: Duration.minutes(1),
@@ -139,6 +148,9 @@ export class CdkstackStack extends Stack {
         nodeModules: ['openai', '@larksuiteoapi/node-sdk'],
         externalModules: ['@aws-sdk'],
         forceDockerBundling: false,
+        esbuildArgs: {
+          '--packages': 'bundle'  // Fix for esbuild 0.22.0+ compatibility
+        }
       },
       functionName: `${deploymentName}-lark-chat`,
       timeout: Duration.minutes(5),

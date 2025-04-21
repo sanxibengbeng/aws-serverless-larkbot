@@ -1,19 +1,18 @@
-import { AIModelStreamInterface } from '../interfaces/AIModelStreamInterface.js';
-import { debugLog } from '../utils.js';
+const { AIModelStreamInterface } = require('../interfaces/AIModelStreamInterface');
 
 /**
  * Mock implementation of the AI model streaming interface for testing
  */
-export class MockStreamService extends AIModelStreamInterface {
+class MockStreamService extends AIModelStreamInterface {
   constructor(config = {}) {
     super();
     this.delay = config.delay || 100; // Milliseconds between chunks
-    this.responseText = config.responseText || "This is a mock response from the AI model. It will be streamed in chunks to simulate a real streaming response.";
+    this.responseText = config.responseText || "收到，这是一个模拟响应，用于测试流式传输功能。";
     
-    debugLog('MockStreamService initialized', {
+    console.log('MockStreamService initialized', {
       delay: this.delay,
       responseLength: this.responseText.length
-    }, 'CONFIG');
+    });
   }
 
   /**
@@ -25,6 +24,14 @@ export class MockStreamService extends AIModelStreamInterface {
   }
 
   /**
+   * Helper method to get a random integer between min and max (inclusive)
+   * @private
+   */
+  _getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  /**
    * Implementation of the invokeModelStream method for testing
    * @param {Array} messages - The conversation messages to send to the model
    * @param {string} systemPrompt - The system prompt to guide the model's behavior
@@ -32,10 +39,10 @@ export class MockStreamService extends AIModelStreamInterface {
    * @returns {Promise<Object>} - The complete response with content and usage statistics
    */
   async invokeModelStream(messages, systemPrompt, callback) {
-    debugLog('Invoking Mock Stream', {
+    console.log('Invoking Mock Stream', {
       messagesCount: messages.length,
       systemPromptLength: systemPrompt.length
-    }, 'INFO');
+    });
 
     try {
       // Simulate streaming by breaking the response into chunks
@@ -58,11 +65,11 @@ export class MockStreamService extends AIModelStreamInterface {
       const inputTokenCount = messages.reduce((acc, msg) => acc + msg.content.length / 4, 0);
       const outputTokenCount = completeMessage.length / 4;
       
-      debugLog('Mock stream completed', {
+      console.log('Mock stream completed', {
         responseLength: completeMessage.length,
         inputTokens: Math.round(inputTokenCount),
         outputTokens: Math.round(outputTokenCount)
-      }, 'INFO');
+      });
       
       // Return the complete response
       return {
@@ -73,8 +80,10 @@ export class MockStreamService extends AIModelStreamInterface {
         },
       };
     } catch (err) {
-      debugLog('Error in mock stream', err, 'ERROR');
+      console.error('Error in mock stream', err);
       throw err;
     }
   }
 }
+
+module.exports = MockStreamService;

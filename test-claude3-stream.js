@@ -34,36 +34,14 @@ async function testClaude3Stream() {
   };
   
   try {
-    // 检查环境变量
-    if (!process.env.AWS_REGION_CODE || !process.env.AWS_AK || !process.env.AWS_SK || !process.env.AWS_BEDROCK_CLAUDE_SONNET) {
-      console.log('请设置必要的环境变量:');
-      console.log('- AWS_REGION_CODE: AWS 区域代码');
-      console.log('- AWS_AK: AWS 访问密钥');
-      console.log('- AWS_SK: AWS 秘密访问密钥');
-      console.log('- AWS_BEDROCK_CLAUDE_SONNET: Claude 模型 ID');
-      
-      console.log('\n示例:');
-      console.log('export AWS_REGION_CODE=your-region');
-      console.log('export AWS_AK=your-access-key');
-      console.log('export AWS_SK=your-secret-key');
-      console.log('export AWS_BEDROCK_CLAUDE_SONNET=anthropic.claude-3-sonnet-20240229-v1:0');
-      
-      return;
-    }
+    // 强制使用 claude3 模型类型进行测试
+    const modelType = 'claude3';
+    console.log(`创建 ${modelType} 服务...`);
     
-    console.log('创建 Claude3 服务...');
-    // 使用工厂方法创建 Claude3 服务实例
-    const modelService = AIModelFactory.createModelService('claude3', {
-      region: process.env.AWS_REGION_CODE,
-      accessKeyId: process.env.AWS_AK,
-      secretAccessKey: process.env.AWS_SK,
-      modelId: process.env.AWS_BEDROCK_CLAUDE_SONNET,
-      temperature: 0.7,
-      topP: 0.9,
-      maxTokens: 2048
-    });
+    // 使用工厂方法创建服务实例，不需要手动传递配置
+    const modelService = AIModelFactory.createModelService(modelType);
     
-    console.log('开始调用 Claude3 流式服务...');
+    console.log('开始调用 AI 模型流式服务...');
     // 调用模型进行流式传输
     const response = await modelService.invokeModelStream(
       messages,

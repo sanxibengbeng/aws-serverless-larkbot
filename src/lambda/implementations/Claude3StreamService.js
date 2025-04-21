@@ -1,15 +1,13 @@
-import { AIModelStreamInterface } from '../interfaces/AIModelStreamInterface.js';
-import {
-  AccessDeniedException,
+const { AIModelStreamInterface } = require('../interfaces/AIModelStreamInterface');
+const {
   BedrockRuntimeClient,
   InvokeModelWithResponseStreamCommand,
-} from "@aws-sdk/client-bedrock-runtime";
-import { debugLog } from '../utils.js';
+} = require("@aws-sdk/client-bedrock-runtime");
 
 /**
  * Claude3 implementation of the AI model streaming interface
  */
-export class Claude3StreamService extends AIModelStreamInterface {
+class Claude3StreamService extends AIModelStreamInterface {
   constructor(config) {
     super();
     this.region = config.region || process.env.AWS_REGION_CODE;
@@ -20,13 +18,13 @@ export class Claude3StreamService extends AIModelStreamInterface {
     this.topP = config.topP || 0.9;
     this.maxTokens = config.maxTokens || 2048;
     
-    debugLog('Claude3StreamService initialized', {
+    console.log('Claude3StreamService initialized', {
       region: this.region,
       modelId: this.modelId,
       temperature: this.temperature,
       topP: this.topP,
       maxTokens: this.maxTokens
-    }, 'CONFIG');
+    });
   }
 
   /**
@@ -35,11 +33,10 @@ export class Claude3StreamService extends AIModelStreamInterface {
    */
   _getRandomInt(min, max) {
     if (min >= max) {
-      debugLog('Invalid random range', { min, max }, 'ERROR');
+      console.error('Invalid random range', { min, max });
       throw new Error('min must be less than max');
     }
     const result = Math.floor(Math.random() * (max - min + 1)) + min;
-    debugLog('Generated random integer', { min, max, result }, 'DEBUG');
     return result;
   }
 
@@ -51,10 +48,10 @@ export class Claude3StreamService extends AIModelStreamInterface {
    * @returns {Promise<Object>} - The complete response with content and usage statistics
    */
   async invokeModelStream(messages, systemPrompt, callback) {
-    debugLog('Invoking Claude3 Stream', {
+    console.log('Invoking Claude3 Stream', {
       messagesCount: messages.length,
       systemPromptLength: systemPrompt.length
-    }, 'INFO');
+    });
 
     const client = new BedrockRuntimeClient({
       region: this.region,
@@ -73,12 +70,12 @@ export class Claude3StreamService extends AIModelStreamInterface {
       max_tokens: this.maxTokens,
     };
 
-    debugLog('Claude3 Stream payload prepared', {
+    console.log('Claude3 Stream payload prepared', {
       anthropic_version: payload.anthropic_version,
       temperature: payload.temperature,
       top_p: payload.top_p,
       max_tokens: payload.max_tokens
-    }, 'DEBUG');
+    });
 
     const command = new InvokeModelWithResponseStreamCommand({
       body: JSON.stringify(payload),
@@ -88,7 +85,7 @@ export class Claude3StreamService extends AIModelStreamInterface {
     });
 
     try {
-      debugLog('Sending stream request to Bedrock', { modelId: this.modelId }, 'INFO');
+      console.log('Sending stream request to Bedrock', { modelId: this.modelId });
       const apiResponse = await client.send(command);
       let completeMessage = "";
       let inputTokenCount = 0;
@@ -105,7 +102,7 @@ export class Claude3StreamService extends AIModelStreamInterface {
         // Process the chunk depending on its type
         if (chunk_type === "message_start") {
           // The "message_start" chunk contains the message's role
-          debugLog(`Message start received with role: ${chunk.message.role}`, null, 'DEBUG');
+          console.log(`Message start received with role: ${chunk.message.role}`);
         } else if (chunk_type === "content_block_delta") {
           // The "content_block_delta" chunks contain the actual response text
 
@@ -116,10 +113,10 @@ export class Claude3StreamService extends AIModelStreamInterface {
           completeMessage = completeMessage + chunk.delta.text;
 
           if (idx % this._getRandomInt(10, 20) == 0) {
-            debugLog('Sending partial response to callback', {
+            console.log('Sending partial response to callback', {
               messageLength: completeMessage.length,
               chunkIndex: idx
-            }, 'DEBUG');
+            });
             await callback(completeMessage, "", false)
           }
           idx++;
@@ -129,23 +126,23 @@ export class Claude3StreamService extends AIModelStreamInterface {
           inputTokenCount = metrics.inputTokenCount;
           outputTokenCount = metrics.outputTokenCount;
 
-          debugLog('Stream completed', {
+          console.log('Stream completed', {
             inputTokenCount: metrics.inputTokenCount,
             outputTokenCount: metrics.outputTokenCount,
             invocationLatency: metrics.invocationLatency,
             firstByteLatency: metrics.firstByteLatency
-          }, 'INFO');
+          });
 
           let endmsg = "input:" + inputTokenCount + " output:" + outputTokenCount + " ";
           await callback(completeMessage, endmsg, true)
         }
       }
       // Print the complete message.
-      debugLog('Complete response received', {
+      console.log('Complete response received', {
         responseLength: completeMessage.length,
         inputTokens: inputTokenCount,
         outputTokens: outputTokenCount
-      }, 'INFO');
+      });
 
       const response = {
         content: [{ type: 'text', text: completeMessage }],
@@ -155,17 +152,17 @@ export class Claude3StreamService extends AIModelStreamInterface {
       return response;
 
     } catch (err) {
-      if (err instanceof AccessDeniedException) {
-        debugLog(`Access denied error when invoking ${this.modelId}`, err, 'ERROR');
-        console.error(
-          `Access denied. Ensure you have the correct permissions to invoke ${this.modelId}.`,
-        );
+      if (err.name === 'AccessDeniedException') {
+        console.error(`Access denied. Ensure you have the correct permissions to invoke ${this.modelId}.`);
+        console.error(err);
       } else {
-        debugLog('Error invoking Claude3 Stream', err, 'ERROR');
+        console.error('Error invoking Claude3 Stream', err);
         throw err;
       }
     } finally {
-      debugLog('Claude3 Stream invocation completed', null, 'DEBUG');
+      console.log('Claude3 Stream invocation completed');
     }
   }
 }
+
+module.exports = Claude3StreamService;

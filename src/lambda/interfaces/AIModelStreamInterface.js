@@ -2,7 +2,7 @@
  * Interface for AI model streaming capabilities
  * This interface defines the contract for streaming AI model responses
  */
-export class AIModelStreamInterface {
+class AIModelStreamInterface {
   /**
    * Invoke the AI model with streaming response
    * @param {Array} messages - The conversation messages to send to the model
@@ -14,3 +14,5 @@ export class AIModelStreamInterface {
     throw new Error('Method not implemented: invokeModelStream must be implemented by concrete classes');
   }
 }
+
+module.exports = { AIModelStreamInterface };
