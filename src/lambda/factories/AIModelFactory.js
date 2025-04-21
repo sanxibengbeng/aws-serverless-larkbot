@@ -5,7 +5,7 @@
 class AIModelFactory {
   /**
    * Get configuration for the specified model type
-   * @param {string} modelType - The type of model service ('claude3', 'mock', etc.)
+   * @param {string} modelType - The type of model service ('claude3', 'mock', 'rag', etc.)
    * @returns {Object} - Configuration object for the specified model type
    */
   static getModelConfig(modelType) {
@@ -37,6 +37,23 @@ class AIModelFactory {
           modelId: process.env.AWS_BEDROCK_CLAUDE_SONNET,
         };
         
+      case 'rag':
+        // Validate required environment variables for RAG
+        const requiredRagVars = ['AWS_REGION_CODE', 'AWS_AK', 'AWS_SK', 'KNOWLEDGE_BASE_ID', 'RAG_MODEL_ARN'];
+        const missingRagVars = requiredRagVars.filter(varName => !process.env[varName]);
+        
+        if (missingRagVars.length > 0) {
+          throw new Error(`Missing required environment variables for RAG: ${missingRagVars.join(', ')}`);
+        }
+        
+        return {
+          region: process.env.AWS_REGION_CODE,
+          accessKeyId: process.env.AWS_AK,
+          secretAccessKey: process.env.AWS_SK,
+          knowledgeBaseId: process.env.KNOWLEDGE_BASE_ID,
+          modelArn: process.env.RAG_MODEL_ARN,
+        };
+        
       case 'mock':
         return {
           ...commonConfig,
@@ -52,7 +69,7 @@ class AIModelFactory {
 
   /**
    * Create an instance of an AI model service
-   * @param {string} modelType - The type of model service to create ('claude3', 'mock', etc.)
+   * @param {string} modelType - The type of model service to create ('claude3', 'mock', 'rag', etc.)
    * @param {Object} overrideConfig - Optional configuration to override default settings
    * @returns {Object} - An instance of the requested model service
    */
@@ -78,6 +95,10 @@ class AIModelFactory {
         case 'claude3':
           const Claude3StreamService = require('../implementations/Claude3StreamService');
           return new Claude3StreamService(config);
+          
+        case 'rag':
+          const BedrockRAGStreamService = require('../implementations/BedrockRAGStreamService');
+          return new BedrockRAGStreamService(config);
           
         case 'mock':
           const MockStreamService = require('../implementations/MockStreamService');
