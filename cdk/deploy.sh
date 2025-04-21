@@ -56,7 +56,7 @@ fi
 
 # Run CDK deploy with the specified deployment name
 echo "Starting CDK deployment..."
-npx cdk deploy --context deploymentName=$DEPLOYMENT_NAME
+cdk deploy --context deploymentName=$DEPLOYMENT_NAME
 
 # Check if deployment was successful
 if [ $? -eq 0 ]; then

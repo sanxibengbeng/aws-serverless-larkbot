@@ -57,7 +57,7 @@ fi
 
 # Run CDK destroy with the specified deployment name
 echo "Starting CDK destruction..."
-npx cdk destroy --context deploymentName=$DEPLOYMENT_NAME
+cdk destroy --context deploymentName=$DEPLOYMENT_NAME
 
 # Check if destruction was successful
 if [ $? -eq 0 ]; then

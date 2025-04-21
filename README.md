@@ -40,3 +40,12 @@ The table names are configured through environment variables:
 - `DB_TABLE`: Messages table name
 - `DB_STATS_TABLE`: Stats table name
 - `DB_EVENTS_TABLE`: Events table name
+
+## 飞书机器人需要的权限
+| 权限代号 | 权限名称 |
+| --- | --- |
+| im:message | 获取与发送单聊、群组消息 |
+| im:message.group_at_msg:readonly | 接收群聊中@机器人消息事件 |
+| im:message.p2p_msg:readonly | 读取用户发给机器人的单聊消息 |
+| im:message:send_as_bot | 以应用的身份发消息 |
+| im:resource | 获取与上传图片或文件资源 |
