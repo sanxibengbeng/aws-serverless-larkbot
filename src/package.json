@@ -9,6 +9,7 @@
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.588.0",
     "@larksuiteoapi/node-sdk": "latest",
+    "axios": "^1.8.4",
     "openai": "latest"
   }
 }

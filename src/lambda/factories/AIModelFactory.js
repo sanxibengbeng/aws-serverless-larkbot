@@ -62,6 +62,25 @@ class AIModelFactory {
             '收到，这是一个模拟响应。依赖倒置原则是面向对象设计的SOLID原则之一，它指出高层模块不应该依赖于低层模块，两者都应该依赖于抽象。',
         };
         
+      case 'dify':
+        // Validate required environment variables for Dify
+        const requiredDifyVars = ['DIFY_API_KEY', 'DIFY_BASE_URL'];
+        const missingDifyVars = requiredDifyVars.filter(varName => !process.env[varName]);
+        
+        if (missingDifyVars.length > 0) {
+          throw new Error(`Missing required environment variables for Dify: ${missingDifyVars.join(', ')}`);
+        }
+        
+        return {
+          ...commonConfig,
+          apiKey: process.env.DIFY_API_KEY,
+          baseUrl: process.env.DIFY_BASE_URL,
+          userId: process.env.DIFY_USER_ID || 'default-user',
+          inputVarName: process.env.DIFY_INPUT_VAR_NAME || 'user_input',
+          systemPromptVarName: process.env.DIFY_SYSTEM_PROMPT_VAR_NAME || 'system_prompt',
+          historyVarName: process.env.DIFY_HISTORY_VAR_NAME || 'conversation_history'
+        };
+        
       default:
         throw new Error(`Unknown model type: ${modelType}`);
     }
@@ -103,6 +122,10 @@ class AIModelFactory {
         case 'mock':
           const MockStreamService = require('../implementations/MockStreamService');
           return new MockStreamService(config);
+          
+        case 'dify':
+          const DifyStreamService = require('../implementations/DifyStreamService');
+          return new DifyStreamService(config);
           
         default:
           throw new Error(`Unknown model type: ${modelType}`);
