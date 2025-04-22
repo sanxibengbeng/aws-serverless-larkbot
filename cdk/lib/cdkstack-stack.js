@@ -106,6 +106,8 @@ export class CdkstackStack extends Stack {
         AWS_AK: process.env.AWS_AK,
         AWS_SK: process.env.AWS_SK,
         AWS_REGION_CODE: process.env.AWS_REGION_CODE,
+        KNOWLEDGE_BASE_ID: process.env.KNOWLEDGE_BASE_ID,
+        RAG_MODEL_ARN: process.env.RAG_MODEL_ARN,
         AWS_BEDROCK_CLAUDE_SONNET: process.env.AWS_BEDROCK_CLAUDE_SONNET,
         AWS_CLAUDE_MAX_SEQ: process.env.AWS_CLAUDE_MAX_SEQ,
         AWS_CLAUDE_IMG_DESC_PROMPT: process.env.AWS_CLAUDE_IMG_DESC_PROMPT,
