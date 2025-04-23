@@ -5,10 +5,10 @@ const DifyStreamService = require('../implementations/DifyStreamService');
 
 // Create a Dify service instance with custom variable names
 const difyService = new DifyStreamService({
-  apiKey: process.env.DIFY_API_KEY || '',
-  baseUrl: process.env.DIFY_BASE_URL || '',
+  apiKey: 'app-Sku2at2Vz8qQlOP2IiBNru15',
+  baseUrl: 'https://oppein-dify.igcd.cn/api/v1',
   userId: 'example-user-123',
-  inputVarName: 'user_question',               // Custom input variable name
+  inputVarName: 'sys.query',               // Custom input variable name
 });
 
 // Example messages array (similar to OpenAI format)

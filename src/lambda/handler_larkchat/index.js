@@ -128,7 +128,7 @@ const queryStatsDDB = async (key) => {
     return JSON.parse(results.Item.tokens.S);
   }
   debugLog("No token stats found for app", { appId: key }, 'INFO');
-  return null;
+  return {input_tokens:0,  output_tokens:0};
 };
 
 const saveStatsDDB = async (key, input_tokens, output_tokens) => {

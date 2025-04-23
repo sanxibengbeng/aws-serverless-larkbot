@@ -53,7 +53,37 @@ class BedrockRAGStreamService extends AIModelStreamInterface {
         type: 'KNOWLEDGE_BASE',
         knowledgeBaseConfiguration: {
           knowledgeBaseId: this.config.knowledgeBaseId,
-          modelArn: this.config.modelArn
+          modelArn: this.config.modelArn,
+          orchestrationConfiguration: {
+              inferenceConfig: {
+                  textInferenceConfig: {
+                      maxTokens: 4096,
+                      stopSequences: [
+                          "\nObservation"
+                      ],
+                      temperature: 0,
+                      topP: 1
+                  }
+              }
+          },
+          retrievalConfiguration: {
+              vectorSearchConfiguration: {
+                  numberOfResults: 10,
+                  overrideSearchType: "HYBRID"
+              }
+          },
+          generationConfiguration: {
+              inferenceConfig: {
+                  textInferenceConfig: {
+                      maxTokens: 4096,
+                      stopSequences: [
+                          "\nObservation"
+                      ],
+                      temperature: 0,
+                      topP: 1
+                  }
+              }
+          }
         }
       }
     };

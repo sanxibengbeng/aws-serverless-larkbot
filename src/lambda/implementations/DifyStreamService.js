@@ -81,6 +81,9 @@ class DifyStreamService extends AIModelStreamInterface {
       const payload = {
         inputs: inputs,
         response_mode: 'streaming',
+        sys:{
+          query: inputs[this.inputVarName]
+        },
         user: this.userId
       };
       
